@@ -1,4 +1,3 @@
-/*
 package cz.cvut.nss.investmentmanagementsystem.config;
 
 import com.hazelcast.config.Config;
@@ -37,4 +36,4 @@ public class HazelcastConfig {
 
         return config;
     }
-}*/
+}

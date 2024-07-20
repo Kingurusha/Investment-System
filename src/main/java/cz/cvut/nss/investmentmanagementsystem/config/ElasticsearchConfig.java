@@ -1,4 +1,3 @@
-/*
 package cz.cvut.nss.investmentmanagementsystem.config;
 
 import org.springframework.context.annotation.Configuration;
@@ -18,4 +17,3 @@ public class ElasticsearchConfig extends ElasticsearchConfiguration {
                 .build();
     }
 }
-*/

@@ -50,8 +50,9 @@ public class UserService implements CrudService<User, Long>{
         userRepository.deleteById(userId);
     }
     @Transactional(readOnly = true)
-    public Optional<User> findUserByUsernameOrEmail(String usernameOrEmail){
-        return userRepository.findByUsernameOrEmail(usernameOrEmail, usernameOrEmail);
+    public User findUserByUsernameOrEmail(String usernameOrEmail){
+        return userRepository.findByUsernameOrEmail(usernameOrEmail, usernameOrEmail)
+                .orElseThrow(()-> new IllegalArgumentException("Not found user by: " + usernameOrEmail));
     }
     @Transactional(readOnly = true)
     public List<Portfolio> getAllUserPortfolio(Long userId){
@@ -91,13 +92,6 @@ public class UserService implements CrudService<User, Long>{
                 default -> throw new IllegalArgumentException("Unknown field: " + fieldName);
             }
         }
-        userRepository.save(user);
-    }
-    @Transactional
-    public void assignUserProfile(Long userId, UserType userType){
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("User not found with ID: " + userId));
-        user.setUserType(userType);
         userRepository.save(user);
     }
 }
