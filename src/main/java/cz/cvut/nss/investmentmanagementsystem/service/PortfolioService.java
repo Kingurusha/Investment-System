@@ -7,6 +7,8 @@ import cz.cvut.nss.investmentmanagementsystem.model.User;
 import cz.cvut.nss.investmentmanagementsystem.model.enums.TransactionType;
 import cz.cvut.nss.investmentmanagementsystem.repository.PortfolioRepository;
 import cz.cvut.nss.investmentmanagementsystem.repository.UserRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,6 +21,7 @@ public class PortfolioService implements CrudService<Portfolio, Long>{
     private final PortfolioRepository portfolioRepository;
     private final PortfolioValidator portfolioValidator;
     private final UserRepository userRepository;
+    private static final Logger LOG = LoggerFactory.getLogger(UserService.class);
 
     public PortfolioService(PortfolioRepository portfolioRepository, PortfolioValidator portfolioValidator, UserRepository userRepository) {
         this.portfolioRepository = portfolioRepository;
@@ -29,10 +32,8 @@ public class PortfolioService implements CrudService<Portfolio, Long>{
     @Transactional
     public void create(Portfolio portfolio){
         portfolio.setTotalValue(BigDecimal.valueOf(0));
-        User user = userRepository.findById(portfolio.getUser().getId())
-                .orElseThrow(() -> new IllegalArgumentException("User not found with ID: " + portfolio.getUser().getId()));
-        portfolio.setUser(user);
         portfolioRepository.save(portfolio);
+        LOG.debug("Create portfolio {}.", portfolio);
     }
     @Override
     @Transactional(readOnly = true)
@@ -45,12 +46,14 @@ public class PortfolioService implements CrudService<Portfolio, Long>{
     public void update(Portfolio portfolio){
         portfolioValidator.validateExistById(portfolio.getId());
         portfolioRepository.save(portfolio);
+        LOG.debug("Update portfolio {}.", portfolio);
     }
     @Override
     @Transactional
     public void delete(Long portfolioId){
         portfolioValidator.validateExistById(portfolioId);
         portfolioRepository.deleteById(portfolioId);
+        LOG.debug("Delete portfolio with ID {}.", portfolioId);
     }
     @Transactional(readOnly = true)
     public Set<Asset> getAllAssetInPortfolio(Long portfolioId){
@@ -71,6 +74,7 @@ public class PortfolioService implements CrudService<Portfolio, Long>{
             throw new IllegalArgumentException("Unsupported transaction type: " + transactionType);
         }
         portfolioRepository.save(portfolio);
+        LOG.debug("Rebalance value portfolio with ID {}.", portfolioId);
     }
     @Transactional(readOnly = true)
     public List<Portfolio> getAllPortfoliosByUserIdOrderByTotalValueDesc(Long userId){

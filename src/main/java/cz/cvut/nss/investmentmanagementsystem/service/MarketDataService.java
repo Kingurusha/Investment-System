@@ -3,7 +3,10 @@ package cz.cvut.nss.investmentmanagementsystem.service;
 import cz.cvut.nss.investmentmanagementsystem.helper.validator.MarketDataValidator;
 import cz.cvut.nss.investmentmanagementsystem.model.MarketData;
 import cz.cvut.nss.investmentmanagementsystem.repository.MarketDataRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,6 +16,7 @@ import java.math.BigDecimal;
 public class MarketDataService implements CrudService<MarketData, Long>{
     private final MarketDataRepository marketDataRepository;
     private final MarketDataValidator marketDataValidator;
+    private static final Logger LOG = LoggerFactory.getLogger(UserService.class);
 
     @Autowired
     public MarketDataService(MarketDataRepository marketDataRepository, MarketDataValidator marketDataValidator) {
@@ -23,9 +27,11 @@ public class MarketDataService implements CrudService<MarketData, Long>{
     @Transactional
     public void create(MarketData marketData){
         marketDataRepository.save(marketData);
+        LOG.debug("Create market data {}.", marketData);
     }
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(value = "marketDataCache", key = "#marketDataId")
     public MarketData get(Long marketDataId){
         marketDataValidator.validateExistById(marketDataId);
         return marketDataRepository.findById(marketDataId).get();
@@ -35,11 +41,13 @@ public class MarketDataService implements CrudService<MarketData, Long>{
     public void update(MarketData marketData){
         marketDataValidator.validateExistById(marketData.getId());
         marketDataRepository.save(marketData);
+        LOG.debug("Update market data {}.", marketData);
     }
     @Override
     @Transactional
     public void delete(Long marketDataId){
         marketDataValidator.validateExistById(marketDataId);
         marketDataRepository.deleteById(marketDataId);
+        LOG.debug("Delete market data with ID {}.", marketDataId);
     }
 }

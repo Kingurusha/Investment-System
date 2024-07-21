@@ -6,19 +6,22 @@ import cz.cvut.nss.investmentmanagementsystem.model.User;
 import cz.cvut.nss.investmentmanagementsystem.model.enums.UserType;
 import cz.cvut.nss.investmentmanagementsystem.repository.PortfolioRepository;
 import cz.cvut.nss.investmentmanagementsystem.repository.UserRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 @Service
 public class UserService implements CrudService<User, Long>{
     private final UserRepository userRepository;
     private final PortfolioRepository portfolioRepository;
     private final UserValidator userValidator;
+    private static final Logger LOG = LoggerFactory.getLogger(UserService.class);
 
     @Autowired
     public UserService(UserRepository userRepository, PortfolioRepository portfolioRepository, UserValidator userValidator) {
@@ -30,6 +33,7 @@ public class UserService implements CrudService<User, Long>{
     @Transactional
     public void create(User user){
         userRepository.save(user);
+        LOG.debug("Create user {}.", user);
     }
     @Override
     @Transactional(readOnly = true)
@@ -42,12 +46,14 @@ public class UserService implements CrudService<User, Long>{
     public void update(User user){
         userValidator.validateExistById(user.getId());
         userRepository.save(user);
+        LOG.debug("Update user {}.", user);
     }
     @Override
     @Transactional
     public void delete(Long userId){
         userValidator.validateExistById(userId);
         userRepository.deleteById(userId);
+        LOG.debug("Delete user with ID {}.", userId);
     }
     @Transactional(readOnly = true)
     public User findUserByUsernameOrEmail(String usernameOrEmail){
@@ -93,5 +99,6 @@ public class UserService implements CrudService<User, Long>{
             }
         }
         userRepository.save(user);
+        LOG.debug("Updated user with ID {}", userId);
     }
 }

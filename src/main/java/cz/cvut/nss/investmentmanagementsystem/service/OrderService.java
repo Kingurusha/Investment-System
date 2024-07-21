@@ -11,7 +11,11 @@ import cz.cvut.nss.investmentmanagementsystem.repository.AssetRepository;
 import cz.cvut.nss.investmentmanagementsystem.repository.OrderRepository;
 import cz.cvut.nss.investmentmanagementsystem.repository.PortfolioRepository;
 import cz.cvut.nss.investmentmanagementsystem.repository.UserRepository;
+import cz.cvut.nss.investmentmanagementsystem.service.factoryorder.TransactionProcessor;
+import cz.cvut.nss.investmentmanagementsystem.service.factoryorder.TransactionProcessorFactory;
 import cz.cvut.nss.investmentmanagementsystem.specification.OrderSpecification;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -32,15 +36,18 @@ public class OrderService implements CrudService<Order, Long> {
     private final AssetRepository assetRepository;
     private final PortfolioRepository portfolioRepository;
     private final PortfolioService portfolioService;
+    private final TransactionProcessorFactory transactionProcessorFactory;
+    private static final Logger LOG = LoggerFactory.getLogger(UserService.class);
 
     @Autowired
-    public OrderService(OrderRepository orderRepository, OrderValidator orderValidator, UserRepository userRepository, AssetRepository assetRepository, PortfolioRepository portfolioRepository, PortfolioService portfolioService) {
+    public OrderService(OrderRepository orderRepository, OrderValidator orderValidator, UserRepository userRepository, AssetRepository assetRepository, PortfolioRepository portfolioRepository, PortfolioService portfolioService, TransactionProcessorFactory transactionProcessorFactory) {
         this.orderRepository = orderRepository;
         this.orderValidator = orderValidator;
         this.userRepository = userRepository;
         this.assetRepository = assetRepository;
         this.portfolioRepository = portfolioRepository;
         this.portfolioService = portfolioService;
+        this.transactionProcessorFactory = transactionProcessorFactory;
     }
 
     @Override
@@ -49,6 +56,7 @@ public class OrderService implements CrudService<Order, Long> {
         order.setOrderStatus(OrderStatus.OPEN);
         order.setDateCreatedOrder(LocalDateTime.now());
         orderRepository.save(order);
+        LOG.debug("Create order {}.", order);
     }
 
     @Override
@@ -63,6 +71,7 @@ public class OrderService implements CrudService<Order, Long> {
     public void update(Order order) {
         orderValidator.validateExistById(order.getId());
         orderRepository.save(order);
+        LOG.debug("Update order {}.", order);
     }
 
     @Override
@@ -70,6 +79,7 @@ public class OrderService implements CrudService<Order, Long> {
     public void delete(Long orderId) {
         orderValidator.validateExistById(orderId);
         orderRepository.deleteById(orderId);
+        LOG.debug("Delete order with ID {}.", orderId);
     }
 
     @Transactional
@@ -84,80 +94,9 @@ public class OrderService implements CrudService<Order, Long> {
                 .orElseThrow(() -> new IllegalArgumentException("Portfolio not found with ID: " + portfolioOrderAccepterId));
         Portfolio portfolioCreator = portfolioRepository.findById(portfolioOrderCreatorId)
                 .orElseThrow(() -> new IllegalArgumentException("Portfolio not found with ID: " + portfolioOrderCreatorId));
-
-        if (newOrder.getTransactionType() == TransactionType.BUY) {
-            if (orderAccepter.getBalance().compareTo(newOrder.getPrice().multiply(newOrder.getQuantity())) >= 0) {
-                orderAccepter.setBalance(orderAccepter.getBalance().subtract(newOrder.getPrice().multiply(newOrder.getQuantity())));
-                userRepository.save(orderAccepter);
-                Asset buyerAsset = assetRepository.findByPortfolioIdAndMarketDataSymbol(portfolioOrderAccepterId
-                        , newOrder.getMarketData().getSymbol()).orElseGet(() -> {
-                    Asset newAsset = new Asset();
-                    newAsset.setMarketData(newOrder.getMarketData());
-                    newAsset.setPortfolio(portfolioAccepter);
-                    newAsset.setQuantity(BigDecimal.ZERO);
-                    return newAsset;
-                });
-                Set<Order> orders = buyerAsset.getOrders();
-                if (orders == null) {
-                    orders = new HashSet<>();
-                }
-                orders.add(newOrder);
-                buyerAsset.setOrders(orders);
-                buyerAsset.setQuantity(buyerAsset.getQuantity().add(newOrder.getQuantity()));
-                assetRepository.save(buyerAsset);
-
-                Asset sellerAsset = assetRepository.findByPortfolioIdAndMarketDataSymbol(
-                                newOrder.getAsset().getPortfolio().getId(), newOrder.getMarketData().getSymbol())
-                        .orElseThrow(() -> new IllegalArgumentException("Asset not found for seller"));
-                sellerAsset.setQuantity(sellerAsset.getQuantity().subtract(newOrder.getQuantity()));
-                assetRepository.save(sellerAsset);
-
-                orderCreator.setBalance(orderCreator.getBalance().add(newOrder.getQuantity().multiply(newOrder.getPrice())));
-                userRepository.save(orderCreator);
-
-                newOrder.setOrderStatus(OrderStatus.EXECUTED);
-                orderRepository.save(newOrder);
-
-                portfolioService.rebalancePortfolio(buyerAsset.getPortfolio().getId(), buyerAsset, TransactionType.BUY);
-                portfolioService.rebalancePortfolio(sellerAsset.getPortfolio().getId(), sellerAsset, TransactionType.SELL);
-            } else {
-                throw new IllegalArgumentException("Insufficient funds for user ID: " + orderAccepterId);
-            }
-        } else {
-            Asset sellerAsset = assetRepository.findByPortfolioIdAndMarketDataSymbol(portfolioAccepter.getId(), newOrder.getMarketData().getSymbol())
-                    .orElseThrow(() -> new IllegalArgumentException("Asset not found for seller"));
-            if (sellerAsset.getQuantity().compareTo(newOrder.getQuantity()) >= 0) {
-                sellerAsset.setQuantity(sellerAsset.getQuantity().subtract(newOrder.getQuantity()));
-                assetRepository.save(sellerAsset);
-
-                Asset buyerAsset = assetRepository.findByUserIdAndMarketDataSymbol(orderCreator.getId()
-                        , newOrder.getMarketData().getSymbol()).orElseGet(() -> {
-                    Asset newAsset = new Asset();
-                    newAsset.setMarketData(newOrder.getMarketData());
-                    newAsset.setPortfolio(portfolioCreator);
-                    newAsset.setQuantity(BigDecimal.ZERO);
-                    return newAsset;
-                });
-                Set<Order> orders = buyerAsset.getOrders();
-                if (orders == null) {
-                    orders = new HashSet<>();
-                }
-                orders.add(newOrder);
-                buyerAsset.setOrders(orders);
-                buyerAsset.setQuantity(buyerAsset.getQuantity().add(newOrder.getQuantity()));
-
-                orderCreator.setBalance(orderCreator.getBalance().subtract((newOrder.getQuantity().multiply(newOrder.getPrice()))));
-                userRepository.save(orderCreator);
-
-                newOrder.setOrderStatus(OrderStatus.EXECUTED);
-                orderRepository.save(newOrder);
-
-                portfolioService.rebalancePortfolio(portfolioOrderAccepterId, sellerAsset, TransactionType.SELL);
-                portfolioService.rebalancePortfolio(portfolioOrderCreatorId, buyerAsset, TransactionType.BUY);
-            } else {
-                throw new IllegalArgumentException("Insufficient assets for user ID: " + orderAccepterId);
-            }
-        }
+        TransactionProcessor transactionProcessor = transactionProcessorFactory.getProcessor(newOrder.getTransactionType());
+        transactionProcessor.process(newOrder, orderAccepter, orderCreator, portfolioAccepter, portfolioCreator);
+        LOG.debug("Order confirmed: {}", newOrder);
     }
     @Transactional(readOnly = true)
     public Page<Order> findOrders(TransactionType transactionType, BigDecimal quantity, BigDecimal price,
