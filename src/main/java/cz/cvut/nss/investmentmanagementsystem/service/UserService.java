@@ -9,7 +9,6 @@ import cz.cvut.nss.investmentmanagementsystem.repository.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -55,15 +54,33 @@ public class UserService implements CrudService<User, Long>{
         userRepository.deleteById(userId);
         LOG.debug("Delete user with ID {}.", userId);
     }
+    /**
+     * Finds a user by username or email.
+     *
+     * @param usernameOrEmail the username or email to search for
+     * @return the found user
+     */
     @Transactional(readOnly = true)
     public User findUserByUsernameOrEmail(String usernameOrEmail){
         return userRepository.findByUsernameOrEmail(usernameOrEmail, usernameOrEmail)
                 .orElseThrow(()-> new IllegalArgumentException("Not found user by: " + usernameOrEmail));
     }
+    /**
+     * Retrieves all portfolios for a user.
+     *
+     * @param userId the ID of the user
+     * @return the list of portfolios
+     */
     @Transactional(readOnly = true)
     public List<Portfolio> getAllUserPortfolio(Long userId){
         return portfolioRepository.findAllByUserId(userId);
     }
+    /**
+     * Partially updates a user's profile.
+     *
+     * @param userId  the ID of the user
+     * @param updates the map of fields to update and their new values
+     */
     @Transactional
     public void UserProfileUpdate(Long userId, Map<String, Object> updates){
         userValidator.validateExistById(userId);
@@ -101,4 +118,5 @@ public class UserService implements CrudService<User, Long>{
         userRepository.save(user);
         LOG.debug("Updated user with ID {}", userId);
     }
+
 }

@@ -1,8 +1,11 @@
 package cz.cvut.nss.investmentmanagementsystem.controller;
 
 import cz.cvut.nss.investmentmanagementsystem.helper.RestUtils;
-import cz.cvut.nss.investmentmanagementsystem.model.Portfolio;
 import cz.cvut.nss.investmentmanagementsystem.model.User;
+import cz.cvut.nss.investmentmanagementsystem.model.dto.PortfolioDto;
+import cz.cvut.nss.investmentmanagementsystem.model.dto.UserDto;
+import cz.cvut.nss.investmentmanagementsystem.model.dto.convertor.PortfolioConvertor;
+import cz.cvut.nss.investmentmanagementsystem.model.dto.convertor.UserConvertor;
 import cz.cvut.nss.investmentmanagementsystem.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
@@ -13,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("api/users")
@@ -25,21 +29,25 @@ public class UsersController {
     }
     // create new user
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<Void> createUser(@RequestBody User user){
+    public ResponseEntity<Void> createUser(@RequestBody UserDto userDto){
+        User user = UserConvertor.createEntity(userDto);
         userService.create(user);
         final HttpHeaders headers = RestUtils.createLocationHeaderFromCurrentUri("/{id}", user.getId());
         return new ResponseEntity<>(headers, HttpStatus.CREATED);
     }
     // get user by id
     @GetMapping(value = "/{userId}", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<User> getUserById(@PathVariable Long userId){
+    public ResponseEntity<UserDto> getUserById(@PathVariable Long userId){
         User user = userService.get(userId);
-        return ResponseEntity.ok(user);
+        UserDto userDto = UserConvertor.toDto(user);
+        return ResponseEntity.ok(userDto);
     }
     // update user
-    @PutMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
+    @PutMapping(value = "/{userId}", consumes = MediaType.APPLICATION_JSON_VALUE)
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void updateUser(@RequestBody User user){
+    public void updateUser(@PathVariable Long userId, @RequestBody UserDto userDto){
+        User user = UserConvertor.getEntity(userDto);
+        user.setId(userId);
         userService.update(user);
     }
     // delete user
@@ -50,14 +58,17 @@ public class UsersController {
     }
     // find user by username or email
     @GetMapping(value = "/search", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<User> getUserByUsernameOrEmail(@RequestParam String usernameOrEmail){
+    public ResponseEntity<UserDto> getUserByUsernameOrEmail(@RequestParam String usernameOrEmail){
         User user = userService.findUserByUsernameOrEmail(usernameOrEmail);
-        return ResponseEntity.ok(user);
+        UserDto userDto = UserConvertor.toDto(user);
+        return ResponseEntity.ok(userDto);
     }
     // get all portfolios from user account
     @GetMapping(value = "/{userId}/portfolios", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<List<Portfolio>> getAllUserPortfolios(@PathVariable Long userId){
-        List<Portfolio> portfolios = userService.getAllUserPortfolio(userId);
+    public ResponseEntity<List<PortfolioDto>> getAllUserPortfolios(@PathVariable Long userId){
+        List<PortfolioDto> portfolios = userService.getAllUserPortfolio(userId).stream()
+                .map(PortfolioConvertor::toDto)
+                .collect(Collectors.toList());
         return ResponseEntity.ok(portfolios);
     }
     // partial update user profile

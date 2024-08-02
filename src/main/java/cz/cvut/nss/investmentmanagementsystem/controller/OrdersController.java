@@ -2,6 +2,8 @@ package cz.cvut.nss.investmentmanagementsystem.controller;
 
 import cz.cvut.nss.investmentmanagementsystem.helper.RestUtils;
 import cz.cvut.nss.investmentmanagementsystem.model.Order;
+import cz.cvut.nss.investmentmanagementsystem.model.dto.OrderDto;
+import cz.cvut.nss.investmentmanagementsystem.model.dto.convertor.OrderConvertor;
 import cz.cvut.nss.investmentmanagementsystem.model.enums.TransactionType;
 import cz.cvut.nss.investmentmanagementsystem.service.OrderService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,27 +24,32 @@ import java.time.LocalDateTime;
 @RequestMapping("api/orders")
 public class OrdersController {
     private final OrderService orderService;
+    private final OrderConvertor orderConvertor;
     @Autowired
-    public OrdersController(OrderService orderService) {
+    public OrdersController(OrderService orderService, OrderConvertor orderConvertor) {
         this.orderService = orderService;
+        this.orderConvertor = orderConvertor;
     }
     // create new order
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<Void> createOrder(@RequestBody Order order){
+    public ResponseEntity<Void> createOrder(@RequestBody OrderDto orderDto){
+        Order order = orderConvertor.getEntity(orderDto);
         orderService.create(order);
         final HttpHeaders headers = RestUtils.createLocationHeaderFromCurrentUri("/{id}", order.getId());
         return new ResponseEntity<>(headers, HttpStatus.CREATED);
     }
     // get order by id
     @GetMapping(value = "/{orderId}", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<Order> getOrder(@PathVariable Long orderId){
+    public ResponseEntity<OrderDto> getOrder(@PathVariable Long orderId){
         Order order = orderService.get(orderId);
-        return ResponseEntity.ok(order);
+        OrderDto orderDto = orderConvertor.toDto(order);
+        return ResponseEntity.ok(orderDto);
     }
     // update order
     @PutMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void updateOrder(@RequestBody Order order){
+    public void updateOrder(@RequestBody OrderDto orderDto){
+        Order order = orderConvertor.getEntity(orderDto);
         orderService.update(order);
     }
     // delete order
@@ -51,7 +58,7 @@ public class OrdersController {
     public void deleteOrder(@PathVariable Long orderId){
         orderService.delete(orderId);
     }
-    // do smth order? which accept smbd user
+    // do smth order which accept smbd user
     @PostMapping(value = "/confirm")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void confirmOrder(@RequestParam Long orderAccepterId,
@@ -62,7 +69,7 @@ public class OrdersController {
     }
     // get all orders by sort
     @GetMapping(value = "/search", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<Page<Order>> getOrders(@RequestParam(required = false) TransactionType transactionType,
+    public ResponseEntity<Page<OrderDto>> getOrders(@RequestParam(required = false) TransactionType transactionType,
                                  @RequestParam(required = false) BigDecimal quantity,
                                  @RequestParam(required = false) BigDecimal price,
                                  @RequestParam(required = false) LocalDateTime dateCreatedOrder,
@@ -74,6 +81,7 @@ public class OrdersController {
         Sort sort = Sort.by(Sort.Direction.fromString(order), sortBy);
         Pageable pageable = PageRequest.of(page, size, sort);
         Page<Order> orders = orderService.findOrders(transactionType, quantity, price, dateCreatedOrder, marketDataSymbol, pageable);
-        return ResponseEntity.ok(orders);
+        Page<OrderDto> orderDtoPage = orders.map(orderConvertor::toDto);
+        return ResponseEntity.ok(orderDtoPage);
     }
 }

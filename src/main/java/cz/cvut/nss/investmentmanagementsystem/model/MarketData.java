@@ -18,6 +18,7 @@ import java.util.List;
 @Data
 public class MarketData extends AbstractEntity implements Serializable {
     @Enumerated(EnumType.STRING)
+    @Column(unique = true)
     private InvestmentType investmentType;
     @Column(nullable = false, unique = true)
     private String symbol;

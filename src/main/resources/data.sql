@@ -31,9 +31,9 @@ INSERT INTO market_data (id, investment_type, symbol, current_price, last_update
 VALUES
     (1, 'STOCKS', 'AAPL', 150.00, '2024-07-20 08:00:00', 145.00, 155.00, 1000000),
     (2, 'BONDS', 'US10Y', 100.00, '2024-07-20 09:00:00', 98.00, 102.00, 500000),
-    (3, 'STOCKS', 'GOOGL', 2800.00, '2024-07-20 10:00:00', 2750.00, 2850.00, 800000),
+    (3, 'COMMODITIES', 'GOOGL', 2800.00, '2024-07-20 10:00:00', 2750.00, 2850.00, 800000),
     (4, 'CRYPTOCURRENCY', 'BTC', 35000.00, '2024-07-20 11:00:00', 34000.00, 36000.00, 300000),
-    (5, 'STOCKS', 'AMZN', 3400.00, '2024-07-20 12:00:00', 3300.00, 3500.00, 600000);
+    (5, 'REAL_ESTATE', 'AMZN', 3400.00, '2024-07-20 12:00:00', 3300.00, 3500.00, 600000);
 
 -- Insert assets
 INSERT INTO asset (id, quantity, portfolio_id, market_data_id)

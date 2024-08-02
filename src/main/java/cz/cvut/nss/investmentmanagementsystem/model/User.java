@@ -18,7 +18,6 @@ public class User extends AbstractEntity implements Serializable {
     @Column(unique = true, nullable = false)
     private String username;
     @Column(nullable = false)
-    @JsonIgnore
     private String password;
     @Column(unique = true, nullable = false)
     private String email;
@@ -27,6 +26,5 @@ public class User extends AbstractEntity implements Serializable {
     @Enumerated(EnumType.STRING)
     private UserType userType;
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JsonIgnore
     private Set<Portfolio> portfolios;
 }

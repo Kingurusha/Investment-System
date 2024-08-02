@@ -55,14 +55,32 @@ public class AssetService implements CrudService<Asset, Long> {
         assetRepository.deleteById(assetId);
         LOG.debug("Delete asset with ID {}.", assetId);
     }
+    /**
+     * Retrieves all assets associated with a specific portfolio.
+     *
+     * @param portfolioId the ID of the portfolio
+     * @return a list of assets
+     */
     @Transactional(readOnly = true)
     public List<Asset> getAllAssetsByPortfolioId(Long portfolioId) {
         return assetRepository.findAllByPortfolioId(portfolioId);
     }
+    /**
+     * Retrieves all assets associated with a specific market data symbol.
+     *
+     * @param symbol the market data symbol
+     * @return a list of assets
+     */
     @Transactional(readOnly = true)
     public List<Asset> getAllAssetsByMarketDataSymbol(String symbol) {
         return assetRepository.findAllByMarketDataSymbol(symbol);
     }
+    /**
+     * Retrieves all assets with a quantity greater than or equal to the specified minimum quantity.
+     *
+     * @param minimumQuantity the minimum quantity
+     * @return a list of assets
+     */
     @Transactional(readOnly = true)
     public List<Asset> getAllAssetsWithMinimumQuantity(BigDecimal minimumQuantity) {
         return assetRepository.findAllByQuantityGreaterThanEqual(minimumQuantity);

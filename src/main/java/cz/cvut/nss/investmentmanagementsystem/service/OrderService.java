@@ -82,6 +82,14 @@ public class OrderService implements CrudService<Order, Long> {
         LOG.debug("Delete order with ID {}.", orderId);
     }
 
+    /**
+     * Confirms an order by processing the transaction based on the order type.
+     *
+     * @param orderAccepterId the ID of the user accepting the order
+     * @param orderId the ID of the order to confirm
+     * @param portfolioOrderAccepterId the ID of the portfolio of the user accepting the order
+     * @param portfolioOrderCreatorId the ID of the portfolio of the user who created the order
+     */
     @Transactional
     public void confirmOrder(Long orderAccepterId, Long orderId, Long portfolioOrderAccepterId, Long portfolioOrderCreatorId) {
         Order newOrder = orderRepository.findById(orderId)
@@ -98,6 +106,18 @@ public class OrderService implements CrudService<Order, Long> {
         transactionProcessor.process(newOrder, orderAccepter, orderCreator, portfolioAccepter, portfolioCreator);
         LOG.debug("Order confirmed: {}", newOrder);
     }
+
+    /**
+     * Finds orders based on various criteria.
+     *
+     * @param transactionType the type of transaction (buy or sell)
+     * @param quantity the quantity of the order
+     * @param price the price of the order
+     * @param dateCreatedOrder the date the order was created
+     * @param marketDataSymbol the symbol of the market data
+     * @param pageable the pagination information
+     * @return a paginated list of orders matching the criteria
+     */
     @Transactional(readOnly = true)
     public Page<Order> findOrders(TransactionType transactionType, BigDecimal quantity, BigDecimal price,
                                   LocalDateTime dateCreatedOrder, String marketDataSymbol, Pageable pageable){

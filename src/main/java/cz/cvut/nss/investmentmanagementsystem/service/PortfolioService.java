@@ -55,12 +55,26 @@ public class PortfolioService implements CrudService<Portfolio, Long>{
         portfolioRepository.deleteById(portfolioId);
         LOG.debug("Delete portfolio with ID {}.", portfolioId);
     }
+    /**
+     * Retrieves all assets in a portfolio.
+     *
+     * @param portfolioId the ID of the portfolio
+     * @return the set of assets in the portfolio
+     */
     @Transactional(readOnly = true)
     public Set<Asset> getAllAssetInPortfolio(Long portfolioId){
         Portfolio portfolio = portfolioRepository.findById(portfolioId)
                 .orElseThrow(() -> new IllegalArgumentException("Portfolio not found with ID: " + portfolioId));
         return portfolio.getAssets();
     }
+
+    /**
+     * Rebalances the portfolio based on a new asset and transaction type
+     *
+     * @param portfolioId the ID of the portfolio
+     * @param newAsset the new asset being added or removed
+     * @param transactionType the type of transaction (sell or buy)
+     */
     @Transactional
     public void rebalancePortfolio(Long portfolioId, Asset newAsset, TransactionType transactionType){
         Portfolio portfolio = portfolioRepository.findById(portfolioId)
@@ -76,10 +90,24 @@ public class PortfolioService implements CrudService<Portfolio, Long>{
         portfolioRepository.save(portfolio);
         LOG.debug("Rebalance value portfolio with ID {}.", portfolioId);
     }
+
+    /**
+     * Retrieves all portfolios for a user, ordered by total value in descending order.
+     *
+     * @param userId the ID of the user
+     * @return the list of portfolios ordered by total value in descending order
+     */
     @Transactional(readOnly = true)
     public List<Portfolio> getAllPortfoliosByUserIdOrderByTotalValueDesc(Long userId){
         return portfolioRepository.findAllByUserIdOrderByTotalValueDesc(userId);
     }
+
+    /**
+     * Retrieves all portfolios for a user, ordered by total value in ascending order.
+     *
+     * @param userId the ID of the user
+     * @return the list of portfolios ordered by total value in ascending  order
+     */
     @Transactional(readOnly = true)
     public List<Portfolio> getAllPortfoliosByUserIdOrderByTotalValueAsc(Long userId){
         return portfolioRepository.findAllByUserIdOrderByTotalValueAsc(userId);

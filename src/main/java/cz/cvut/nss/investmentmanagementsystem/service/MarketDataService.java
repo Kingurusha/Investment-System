@@ -11,6 +11,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 public class MarketDataService implements CrudService<MarketData, Long>{
@@ -40,6 +42,7 @@ public class MarketDataService implements CrudService<MarketData, Long>{
     @Transactional
     public void update(MarketData marketData){
         marketDataValidator.validateExistById(marketData.getId());
+        marketData.setLastUpdateDate(LocalDateTime.now());
         marketDataRepository.save(marketData);
         LOG.debug("Update market data {}.", marketData);
     }
@@ -49,5 +52,17 @@ public class MarketDataService implements CrudService<MarketData, Long>{
         marketDataValidator.validateExistById(marketDataId);
         marketDataRepository.deleteById(marketDataId);
         LOG.debug("Delete market data with ID {}.", marketDataId);
+    }
+
+    /**
+     * Finds all market data entities with current price between specified minPrice and maxPrice.
+     *
+     * @param minPrice the min price
+     * @param maxPrice the max price
+     * @return a list of market data entities
+     */
+    @Transactional(readOnly = true)
+    public List<MarketData> getAllMarketDataWithCurrentPriceBetween(BigDecimal minPrice, BigDecimal maxPrice){
+        return marketDataRepository.findAllByCurrentPriceBetween(minPrice, maxPrice);
     }
 }
