@@ -59,9 +59,6 @@ The Investment Management System is a robust and scalable platform designed to m
 #### Factory Pattern
 - The factory pattern is used to manage the creation of orders, specifically to differentiate between buy and sell transactions. For more details, see the [Factory Order Service](src/main/java/cz/cvut/nss/investmentmanagementsystem/service/factoryorder).
 
-### Note on Design Patterns
-- We implemented three of the five required design patterns. Additional patterns such as Singleton could have been applied to configuration files, but Spring Boot's `@Configuration` annotation already provides this functionality.
-
 ### Use Cases
 - Detailed use cases can be found in the [diagrams folder](diagrams).
 
